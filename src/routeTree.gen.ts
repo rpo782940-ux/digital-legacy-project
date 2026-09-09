@@ -10,33 +10,246 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PageRouteImport } from './routes/$page'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CartRouteImport } from './routes/cart'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PSlugRouteImport } from './routes/p.$slug'
+import { Route as UkIndexRouteImport } from './routes/uk.index'
+import { Route as UkPageRouteImport } from './routes/uk.$page'
+import { Route as UkAccountRouteImport } from './routes/uk.account'
+import { Route as UkAuthRouteImport } from './routes/uk.auth'
+import { Route as UkCartRouteImport } from './routes/uk.cart'
+import { Route as UkSearchRouteImport } from './routes/uk.search'
+import { Route as UkPSlugRouteImport } from './routes/uk.p.$slug'
+import { Route as ApiPublicSalesdriveWebhookRouteImport } from './routes/api/public/salesdrive.webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PageRoute = PageRouteImport.update({
+  id: '/$page',
+  path: '/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PSlugRoute = PSlugRouteImport.update({
+  id: '/p/$slug',
+  path: '/p/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UkIndexRoute = UkIndexRouteImport.update({
+  id: '/uk/',
+  path: '/uk/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UkPageRoute = UkPageRouteImport.update({
+  id: '/uk/$page',
+  path: '/uk/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UkAccountRoute = UkAccountRouteImport.update({
+  id: '/uk/account',
+  path: '/uk/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UkAuthRoute = UkAuthRouteImport.update({
+  id: '/uk/auth',
+  path: '/uk/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UkCartRoute = UkCartRouteImport.update({
+  id: '/uk/cart',
+  path: '/uk/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UkSearchRoute = UkSearchRouteImport.update({
+  id: '/uk/search',
+  path: '/uk/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UkPSlugRoute = UkPSlugRouteImport.update({
+  id: '/uk/p/$slug',
+  path: '/uk/p/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSalesdriveWebhookRoute =
+  ApiPublicSalesdriveWebhookRouteImport.update({
+    id: '/api/public/salesdrive/webhook',
+    path: '/api/public/salesdrive/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$page': typeof PageRoute
+  '/account': typeof AccountRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/cart': typeof CartRoute
+  '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/p/$slug': typeof PSlugRoute
+  '/uk/$page': typeof UkPageRoute
+  '/uk/account': typeof UkAccountRoute
+  '/uk/auth': typeof UkAuthRoute
+  '/uk/cart': typeof UkCartRoute
+  '/uk/search': typeof UkSearchRoute
+  '/uk/': typeof UkIndexRoute
+  '/uk/p/$slug': typeof UkPSlugRoute
+  '/api/public/salesdrive/webhook': typeof ApiPublicSalesdriveWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$page': typeof PageRoute
+  '/account': typeof AccountRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/cart': typeof CartRoute
+  '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/p/$slug': typeof PSlugRoute
+  '/uk/$page': typeof UkPageRoute
+  '/uk/account': typeof UkAccountRoute
+  '/uk/auth': typeof UkAuthRoute
+  '/uk/cart': typeof UkCartRoute
+  '/uk/search': typeof UkSearchRoute
+  '/uk': typeof UkIndexRoute
+  '/uk/p/$slug': typeof UkPSlugRoute
+  '/api/public/salesdrive/webhook': typeof ApiPublicSalesdriveWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$page': typeof PageRoute
+  '/account': typeof AccountRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/cart': typeof CartRoute
+  '/search': typeof SearchRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/p/$slug': typeof PSlugRoute
+  '/uk/$page': typeof UkPageRoute
+  '/uk/account': typeof UkAccountRoute
+  '/uk/auth': typeof UkAuthRoute
+  '/uk/cart': typeof UkCartRoute
+  '/uk/search': typeof UkSearchRoute
+  '/uk/': typeof UkIndexRoute
+  '/uk/p/$slug': typeof UkPSlugRoute
+  '/api/public/salesdrive/webhook': typeof ApiPublicSalesdriveWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/$page'
+    | '/account'
+    | '/admin'
+    | '/auth'
+    | '/cart'
+    | '/search'
+    | '/sitemap.xml'
+    | '/p/$slug'
+    | '/uk/$page'
+    | '/uk/account'
+    | '/uk/auth'
+    | '/uk/cart'
+    | '/uk/search'
+    | '/uk/'
+    | '/uk/p/$slug'
+    | '/api/public/salesdrive/webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/$page'
+    | '/account'
+    | '/admin'
+    | '/auth'
+    | '/cart'
+    | '/search'
+    | '/sitemap.xml'
+    | '/p/$slug'
+    | '/uk/$page'
+    | '/uk/account'
+    | '/uk/auth'
+    | '/uk/cart'
+    | '/uk/search'
+    | '/uk'
+    | '/uk/p/$slug'
+    | '/api/public/salesdrive/webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/$page'
+    | '/account'
+    | '/admin'
+    | '/auth'
+    | '/cart'
+    | '/search'
+    | '/sitemap.xml'
+    | '/p/$slug'
+    | '/uk/$page'
+    | '/uk/account'
+    | '/uk/auth'
+    | '/uk/cart'
+    | '/uk/search'
+    | '/uk/'
+    | '/uk/p/$slug'
+    | '/api/public/salesdrive/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PageRoute: typeof PageRoute
+  AccountRoute: typeof AccountRoute
+  AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
+  CartRoute: typeof CartRoute
+  SearchRoute: typeof SearchRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  PSlugRoute: typeof PSlugRoute
+  UkPageRoute: typeof UkPageRoute
+  UkAccountRoute: typeof UkAccountRoute
+  UkAuthRoute: typeof UkAuthRoute
+  UkCartRoute: typeof UkCartRoute
+  UkSearchRoute: typeof UkSearchRoute
+  UkIndexRoute: typeof UkIndexRoute
+  UkPSlugRoute: typeof UkPSlugRoute
+  ApiPublicSalesdriveWebhookRoute: typeof ApiPublicSalesdriveWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +261,139 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$page': {
+      id: '/$page'
+      path: '/$page'
+      fullPath: '/$page'
+      preLoaderRoute: typeof PageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/p/$slug': {
+      id: '/p/$slug'
+      path: '/p/$slug'
+      fullPath: '/p/$slug'
+      preLoaderRoute: typeof PSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uk/': {
+      id: '/uk/'
+      path: '/uk'
+      fullPath: '/uk/'
+      preLoaderRoute: typeof UkIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uk/$page': {
+      id: '/uk/$page'
+      path: '/uk/$page'
+      fullPath: '/uk/$page'
+      preLoaderRoute: typeof UkPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uk/account': {
+      id: '/uk/account'
+      path: '/uk/account'
+      fullPath: '/uk/account'
+      preLoaderRoute: typeof UkAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uk/auth': {
+      id: '/uk/auth'
+      path: '/uk/auth'
+      fullPath: '/uk/auth'
+      preLoaderRoute: typeof UkAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uk/cart': {
+      id: '/uk/cart'
+      path: '/uk/cart'
+      fullPath: '/uk/cart'
+      preLoaderRoute: typeof UkCartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uk/search': {
+      id: '/uk/search'
+      path: '/uk/search'
+      fullPath: '/uk/search'
+      preLoaderRoute: typeof UkSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uk/p/$slug': {
+      id: '/uk/p/$slug'
+      path: '/uk/p/$slug'
+      fullPath: '/uk/p/$slug'
+      preLoaderRoute: typeof UkPSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/salesdrive/webhook': {
+      id: '/api/public/salesdrive/webhook'
+      path: '/api/public/salesdrive/webhook'
+      fullPath: '/api/public/salesdrive/webhook'
+      preLoaderRoute: typeof ApiPublicSalesdriveWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PageRoute: PageRoute,
+  AccountRoute: AccountRoute,
+  AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
+  CartRoute: CartRoute,
+  SearchRoute: SearchRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  PSlugRoute: PSlugRoute,
+  UkPageRoute: UkPageRoute,
+  UkAccountRoute: UkAccountRoute,
+  UkAuthRoute: UkAuthRoute,
+  UkCartRoute: UkCartRoute,
+  UkSearchRoute: UkSearchRoute,
+  UkIndexRoute: UkIndexRoute,
+  UkPSlugRoute: UkPSlugRoute,
+  ApiPublicSalesdriveWebhookRoute: ApiPublicSalesdriveWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

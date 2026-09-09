@@ -1,14 +1,15 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+
+# Private and non-indexable areas
+Disallow: /cart
+Disallow: /uk/cart
+Disallow: /auth
+Disallow: /uk/auth
+Disallow: /account
+Disallow: /uk/account
+Disallow: /search
+Disallow: /uk/search
+Disallow: /api/
+
+Sitemap: https://www.technoforma.com.ua/sitemap.xml
