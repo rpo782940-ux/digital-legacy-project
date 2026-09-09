@@ -177,6 +177,7 @@ export type Database = {
           created_at: string
           customer_name: string
           delivery: string | null
+          discount: number
           email: string | null
           id: string
           lang: string
@@ -187,8 +188,14 @@ export type Database = {
           order_no: number
           payment: string | null
           phone: string
+          salesdrive_order_id: number | null
+          salesdrive_status_id: number | null
+          salesdrive_sync_error: string | null
+          salesdrive_sync_status: string
+          salesdrive_synced_at: string | null
           status: string
           total: number
+          tracking_number: string | null
           updated_at: string
           user_id: string | null
         }
@@ -198,6 +205,7 @@ export type Database = {
           created_at?: string
           customer_name: string
           delivery?: string | null
+          discount?: number
           email?: string | null
           id?: string
           lang?: string
@@ -208,8 +216,14 @@ export type Database = {
           order_no?: never
           payment?: string | null
           phone: string
+          salesdrive_order_id?: number | null
+          salesdrive_status_id?: number | null
+          salesdrive_sync_error?: string | null
+          salesdrive_sync_status?: string
+          salesdrive_synced_at?: string | null
           status?: string
           total?: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -219,6 +233,7 @@ export type Database = {
           created_at?: string
           customer_name?: string
           delivery?: string | null
+          discount?: number
           email?: string | null
           id?: string
           lang?: string
@@ -229,8 +244,14 @@ export type Database = {
           order_no?: never
           payment?: string | null
           phone?: string
+          salesdrive_order_id?: number | null
+          salesdrive_status_id?: number | null
+          salesdrive_sync_error?: string | null
+          salesdrive_sync_status?: string
+          salesdrive_synced_at?: string | null
           status?: string
           total?: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -242,9 +263,10 @@ export type Database = {
           code_hash: string
           consumed_at: string | null
           created_at: string
+          email: string | null
           expires_at: string
           id: string
-          phone: string
+          phone: string | null
           purpose: string
           user_id: string
         }
@@ -253,9 +275,10 @@ export type Database = {
           code_hash: string
           consumed_at?: string | null
           created_at?: string
+          email?: string | null
           expires_at: string
           id?: string
-          phone: string
+          phone?: string | null
           purpose?: string
           user_id: string
         }
@@ -264,11 +287,54 @@ export type Database = {
           code_hash?: string
           consumed_at?: string | null
           created_at?: string
+          email?: string | null
           expires_at?: string
           id?: string
-          phone?: string
+          phone?: string | null
           purpose?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      product_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          note: string | null
+          products_count: number
+          products_created: number
+          products_updated: number
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          note?: string | null
+          products_count?: number
+          products_created?: number
+          products_updated?: number
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          note?: string | null
+          products_count?: number
+          products_created?: number
+          products_updated?: number
+          source?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -409,28 +475,37 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          email: string | null
+          email_verified: boolean
           first_name: string
           id: string
           last_name: string
-          phone: string
+          nickname: string | null
+          phone: string | null
           phone_verified: boolean
           updated_at: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
+          email_verified?: boolean
           first_name?: string
           id: string
           last_name?: string
-          phone: string
+          nickname?: string | null
+          phone?: string | null
           phone_verified?: boolean
           updated_at?: string
         }
         Update: {
           created_at?: string
+          email?: string | null
+          email_verified?: boolean
           first_name?: string
           id?: string
           last_name?: string
-          phone?: string
+          nickname?: string | null
+          phone?: string | null
           phone_verified?: boolean
           updated_at?: string
         }
