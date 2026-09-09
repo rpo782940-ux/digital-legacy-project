@@ -302,6 +302,7 @@ export type Database = {
           price: number | null
           quantity: number
           seo_url: string | null
+          sku: string | null
           slug: string
           sort_order: number
           source_hash: string | null
@@ -342,6 +343,7 @@ export type Database = {
           price?: number | null
           quantity?: number
           seo_url?: string | null
+          sku?: string | null
           slug: string
           sort_order?: number
           source_hash?: string | null
@@ -382,6 +384,7 @@ export type Database = {
           price?: number | null
           quantity?: number
           seo_url?: string | null
+          sku?: string | null
           slug?: string
           sort_order?: number
           source_hash?: string | null
