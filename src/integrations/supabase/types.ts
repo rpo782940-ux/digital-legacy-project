@@ -177,6 +177,7 @@ export type Database = {
           created_at: string
           customer_name: string
           delivery: string | null
+          discount: number
           email: string | null
           id: string
           lang: string
@@ -187,8 +188,14 @@ export type Database = {
           order_no: number
           payment: string | null
           phone: string
+          salesdrive_order_id: number | null
+          salesdrive_status_id: number | null
+          salesdrive_sync_error: string | null
+          salesdrive_sync_status: string
+          salesdrive_synced_at: string | null
           status: string
           total: number
+          tracking_number: string | null
           updated_at: string
           user_id: string | null
         }
@@ -198,6 +205,7 @@ export type Database = {
           created_at?: string
           customer_name: string
           delivery?: string | null
+          discount?: number
           email?: string | null
           id?: string
           lang?: string
@@ -208,8 +216,14 @@ export type Database = {
           order_no?: never
           payment?: string | null
           phone: string
+          salesdrive_order_id?: number | null
+          salesdrive_status_id?: number | null
+          salesdrive_sync_error?: string | null
+          salesdrive_sync_status?: string
+          salesdrive_synced_at?: string | null
           status?: string
           total?: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -219,6 +233,7 @@ export type Database = {
           created_at?: string
           customer_name?: string
           delivery?: string | null
+          discount?: number
           email?: string | null
           id?: string
           lang?: string
@@ -229,8 +244,14 @@ export type Database = {
           order_no?: never
           payment?: string | null
           phone?: string
+          salesdrive_order_id?: number | null
+          salesdrive_status_id?: number | null
+          salesdrive_sync_error?: string | null
+          salesdrive_sync_status?: string
+          salesdrive_synced_at?: string | null
           status?: string
           total?: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
