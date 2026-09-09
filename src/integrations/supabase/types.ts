@@ -242,9 +242,10 @@ export type Database = {
           code_hash: string
           consumed_at: string | null
           created_at: string
+          email: string | null
           expires_at: string
           id: string
-          phone: string
+          phone: string | null
           purpose: string
           user_id: string
         }
@@ -253,9 +254,10 @@ export type Database = {
           code_hash: string
           consumed_at?: string | null
           created_at?: string
+          email?: string | null
           expires_at: string
           id?: string
-          phone: string
+          phone?: string | null
           purpose?: string
           user_id: string
         }
@@ -264,9 +266,10 @@ export type Database = {
           code_hash?: string
           consumed_at?: string | null
           created_at?: string
+          email?: string | null
           expires_at?: string
           id?: string
-          phone?: string
+          phone?: string | null
           purpose?: string
           user_id?: string
         }
@@ -409,28 +412,37 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          email: string | null
+          email_verified: boolean
           first_name: string
           id: string
           last_name: string
-          phone: string
+          nickname: string | null
+          phone: string | null
           phone_verified: boolean
           updated_at: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
+          email_verified?: boolean
           first_name?: string
           id: string
           last_name?: string
-          phone: string
+          nickname?: string | null
+          phone?: string | null
           phone_verified?: boolean
           updated_at?: string
         }
         Update: {
           created_at?: string
+          email?: string | null
+          email_verified?: boolean
           first_name?: string
           id?: string
           last_name?: string
-          phone?: string
+          nickname?: string | null
+          phone?: string | null
           phone_verified?: boolean
           updated_at?: string
         }
