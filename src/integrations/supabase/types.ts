@@ -296,6 +296,48 @@ export type Database = {
         }
         Relationships: []
       }
+      product_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          note: string | null
+          products_count: number
+          products_created: number
+          products_updated: number
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          note?: string | null
+          products_count?: number
+          products_created?: number
+          products_updated?: number
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          note?: string | null
+          products_count?: number
+          products_created?: number
+          products_updated?: number
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           alt_ru: string | null
