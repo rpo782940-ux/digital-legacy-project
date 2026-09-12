@@ -1,278 +1,291 @@
 /**
  * Server-only catalog reads.
- * The database (filled by the MasteraForm sync worker) is the single source of
- * truth — no static JSON catalog exists anymore.
+ *
+ * The single source of truth is the old OpenCart database (masteraf_new),
+ * reached through the signed PHP bridge on the HostUkraine hosting. Nothing is
+ * written there — the bridge rejects every non-SELECT statement.
+ *
+ *   catalog.server.ts -> bridge.server.ts -> /bridge/api/index.php -> MySQL
  */
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-import type { CategorySummary, Lang, Product, Variant } from "@/lib/site";
 import {
-  localImage,
-  localImages,
-  productAlt,
-  productDescription,
-  scrubText,
-} from "@/lib/product-content";
-
-
-const PRODUCT_COLUMNS =
-  "external_id, sku, slug, name_ru, name_uk, alt_ru, alt_uk, image_path, gallery, specs_ru, specs_uk, variants_ru, variants_uk, description_ru, description_uk, price, old_price, in_stock, is_new, is_special, brand, sort_order, category_id";
-
-export function publicClient() {
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-  const url = process.env["SUPABASE_URL"]!;
-  return createClient<Database>(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
-          h.delete("Authorization");
-        }
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
-
-type Row = Record<string, unknown>;
+  catalogBridge,
+  catalogImageUrl,
+  type CatalogCategoryRow,
+  type CatalogProductRow,
+} from "@/lib/bridge.server";
+import { CATEGORIES, type CategorySummary, type Lang, type Product } from "@/lib/site";
+import { productAlt, productDescription, scrubText } from "@/lib/product-content";
 
 /** Categories retired from the site but still present in the source data. */
 const HIDDEN_CATEGORIES = new Set(["forms_schelevogo_pola"]);
 
-const strList = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+const PAGE_SIZE = 1000;
+const TTL_MS = 5 * 60_000;
 
-const variantList = (value: unknown): Variant[] =>
-  Array.isArray(value)
-    ? (value as Variant[]).filter((v) => v && typeof v.label === "string")
-    : [];
+/** Site category slugs, keyed by a loose comparable form of the slug/name. */
+const SITE_SLUGS = new Map<string, string>();
+for (const c of CATEGORIES) SITE_SLUGS.set(normalize(c.slug), c.slug);
 
-const num = (value: unknown): number | null =>
-  value === null || value === undefined ? null : Number(value);
+function normalize(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\.(php|html?)$/, "")
+    .replace(/[^a-z0-9а-яіїєґ]+/gi, "");
+}
 
-export function toProduct(row: Row, lang: Lang, categorySlug: string): Product {
-  const uk = lang === "uk";
-  const name = scrubText(String((uk ? row["name_uk"] : row["name_ru"]) ?? ""));
-  const slug = String(row["slug"] ?? "");
-  // Defensive: never render supplier/location traces coming from raw data.
-  const specs = strList(uk ? row["specs_uk"] : row["specs_ru"]).map(scrubText).filter(Boolean);
+// ------------------------------------------------------------------ live cache
+
+type Snapshot = {
+  products: Product[];
+  bySlug: Map<string, Product>;
+  byCategory: Map<string, Product[]>;
+  categories: CategorySummary[];
+  loadedAt: number;
+};
+
+const cache = new Map<Lang, Snapshot>();
+const inflight = new Map<Lang, Promise<Snapshot>>();
+
+function html(value: unknown): string {
+  return scrubText(
+    String(value ?? "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/\s+/g, " ")
+      .trim(),
+  );
+}
+
+const num = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** OpenCart SEO keyword, or a stable id-based slug when the shop has none. */
+function productSlug(row: CatalogProductRow): string {
+  const seo = String(row.slug ?? "").replace(/\.(php|html?)$/, "");
+  return seo || `p${row.product_id}`;
+}
+
+export function toProduct(row: CatalogProductRow, lang: Lang, categorySlug: string): Product {
+  const name = scrubText(String(row.name ?? ""));
+  const slug = productSlug(row);
+  const specs = (row.attributes ?? [])
+    .map((a) => `${scrubText(String(a.name ?? ""))}: ${scrubText(String(a.text ?? ""))}`)
+    .map((s) => s.replace(/^:\s*/, "").trim())
+    .filter(Boolean);
   const base = { name, slug, category: categorySlug, specs };
+
+  const listPrice = num(row.price);
+  const special = num(row.special_price);
+  const gallery = String(row.gallery ?? "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(catalogImageUrl);
+  const description = html(row.description) || productDescription(base, lang);
+  const added = row.date_added ? Date.parse(String(row.date_added).replace(" ", "T")) : NaN;
+
   return {
-    id: String(row["external_id"] ?? row["slug"]),
-    sku: row["sku"] ? String(row["sku"]) : null,
+    id: String(row.product_id),
+    sku: row.model ? String(row.model) : row.sku ? String(row.sku) : null,
     slug,
     name,
     alt: productAlt(base, lang),
-    image: localImage(String(row["image_path"] ?? "")),
-    gallery: localImages(strList(row["gallery"])),
+    image: catalogImageUrl(row.image),
+    gallery,
     specs,
-    description: productDescription(base, lang),
-    variants: variantList(uk ? row["variants_uk"] : row["variants_ru"]),
-    price: num(row["price"]),
-    oldPrice: num(row["old_price"]),
-    inStock: row["in_stock"] !== false,
-    isNew: row["is_new"] === true,
-    isSpecial: row["is_special"] === true,
+    description,
+    variants: [],
+    price: special ?? listPrice,
+    oldPrice: special ? listPrice : null,
+    inStock: (num(row.quantity) ?? 0) > 0,
+    isNew: Number.isFinite(added) ? Date.now() - added < 90 * 86_400_000 : false,
+    isSpecial: special !== null,
     brand: null,
     category: categorySlug,
   };
 }
 
-
-async function categoryMap() {
-  const supabase = publicClient();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id, slug")
-    .eq("is_active", true);
-  if (error) throw new Error(error.message);
-
-  const byId = new Map<string, string>();
-  const bySlug = new Map<string, string>();
-  for (const c of data ?? []) {
-    if (HIDDEN_CATEGORIES.has(c.slug)) continue;
-    byId.set(c.id, c.slug);
-    bySlug.set(c.slug, c.id);
+/** category_id -> site category slug, built from the shop's own SEO keywords. */
+function categoryIndex(rows: CatalogCategoryRow[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const row of rows) {
+    if (String(row.status) === "0") continue;
+    const candidates = [row.slug ?? "", row.meta_title ?? "", row.name ?? ""];
+    for (const candidate of candidates) {
+      const slug = SITE_SLUGS.get(normalize(String(candidate)));
+      if (slug && !HIDDEN_CATEGORIES.has(slug)) {
+        map.set(String(row.category_id), slug);
+        break;
+      }
+    }
   }
-  return { byId, bySlug };
+  return map;
 }
+
+async function fetchAllProducts(lang: Lang): Promise<CatalogProductRow[]> {
+  const all: CatalogProductRow[] = [];
+  for (let offset = 0; offset < 20_000; offset += PAGE_SIZE) {
+    const page = await catalogBridge.products(lang, { limit: PAGE_SIZE, offset });
+    if (!Array.isArray(page) || page.length === 0) break;
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+async function snapshot(lang: Lang): Promise<Snapshot> {
+  const cached = cache.get(lang);
+  if (cached && Date.now() - cached.loadedAt < TTL_MS) return cached;
+  const running = inflight.get(lang);
+  if (running) return await running;
+
+  const task = (async (): Promise<Snapshot> => {
+    const [categoryRows, productRows] = await Promise.all([
+      catalogBridge.categories(lang),
+      fetchAllProducts(lang),
+    ]);
+    const index = categoryIndex(categoryRows ?? []);
+
+    const products: Product[] = [];
+    const bySlug = new Map<string, Product>();
+    const byCategory = new Map<string, Product[]>();
+
+    for (const row of productRows) {
+      const ids = String(row.category_ids ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const slugs = [...new Set(ids.map((id) => index.get(id)).filter((s): s is string => !!s))];
+      const product = toProduct(row, lang, slugs[0] ?? "");
+      products.push(product);
+      bySlug.set(product.slug, product);
+      for (const slug of slugs) {
+        const list = byCategory.get(slug) ?? [];
+        list.push(slugs[0] === slug ? product : { ...product, category: slug });
+        byCategory.set(slug, list);
+      }
+    }
+
+    const counts = new Map<string, number>();
+    const covers = new Map<string, string>();
+    for (const [slug, list] of byCategory) {
+      counts.set(slug, list.length);
+      const withImage = list.find((p) => p.image);
+      if (withImage) covers.set(slug, withImage.image);
+    }
+
+    const categories: CategorySummary[] = CATEGORIES.filter(
+      (c) => !HIDDEN_CATEGORIES.has(c.slug),
+    ).map((c) => ({
+      slug: c.slug,
+      name: c.slug,
+      count: counts.get(c.slug) ?? 0,
+      cover: covers.get(c.slug) ?? "/brand/logo.png",
+    }));
+
+    const fresh: Snapshot = { products, bySlug, byCategory, categories, loadedAt: Date.now() };
+    cache.set(lang, fresh);
+    return fresh;
+  })();
+
+  inflight.set(lang, task);
+  try {
+    return await task;
+  } finally {
+    inflight.delete(lang);
+  }
+}
+
+// ----------------------------------------------------------------- public API
 
 /** Category cards: product counts and a cover image per category. */
 export async function loadNav(): Promise<{ categories: CategorySummary[]; total: number }> {
-  const supabase = publicClient();
-  const { byId } = await categoryMap();
-
-  const { data, error } = await supabase
-    .from("products")
-    .select("category_id, image_path, name_ru, name_uk, sort_order")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .limit(2000);
-  if (error) throw new Error(error.message);
-
-  const counts = new Map<string, number>();
-  const covers = new Map<string, string>();
-  for (const row of data ?? []) {
-    const slug = byId.get(row.category_id);
-    if (!slug) continue;
-    counts.set(slug, (counts.get(slug) ?? 0) + 1);
-    if (!covers.has(slug) && row.image_path) covers.set(slug, localImage(row.image_path));
-  }
-
-  const categories: CategorySummary[] = [...byId.values()].map((slug) => ({
-    slug,
-    name: slug,
-    count: counts.get(slug) ?? 0,
-    cover: covers.get(slug) ?? "/brand/logo.png",
-  }));
-
-  return { categories, total: data?.length ?? 0 };
+  const data = await snapshot("ru");
+  return { categories: data.categories, total: data.products.length };
 }
 
-/** All active products of one category, already sorted new → sale → rest. */
+/** All active products of one category, specials and new arrivals first. */
 export async function loadCategory(slug: string, lang: Lang): Promise<Product[]> {
-  const supabase = publicClient();
-  const { bySlug } = await categoryMap();
-  const id = bySlug.get(slug);
-  if (!id) return [];
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_COLUMNS)
-    .eq("category_id", id)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .limit(1000);
-  if (error) throw new Error(error.message);
-
-  return (data ?? []).map((row) => toProduct(row as Row, lang, slug));
+  if (HIDDEN_CATEGORIES.has(slug)) return [];
+  const data = await snapshot(lang);
+  return data.byCategory.get(slug) ?? [];
 }
 
 /** Home-page blocks: newest arrivals and current specials. */
 export async function loadHighlights(
   lang: Lang,
 ): Promise<{ fresh: Product[]; specials: Product[] }> {
-  const supabase = publicClient();
-  const { byId } = await categoryMap();
-
-  const pick = async (column: "is_new" | "is_special") => {
-    const { data, error } = await supabase
-      .from("products")
-      .select(PRODUCT_COLUMNS)
-      .eq("is_active", true)
-      .eq(column, true)
-      .order("sort_order", { ascending: true })
-      .limit(8);
-    if (error) throw new Error(error.message);
-    return (data ?? [])
-      .filter((row) => byId.has((row as Row)["category_id"] as string))
-      .map((row) => toProduct(row as Row, lang, byId.get((row as Row)["category_id"] as string)!));
+  const data = await snapshot(lang);
+  const visible = data.products.filter((p) => p.category);
+  return {
+    fresh: visible.filter((p) => p.isNew).slice(0, 8),
+    specials: visible.filter((p) => p.isSpecial).slice(0, 8),
   };
-
-  const [fresh, specials] = await Promise.all([pick("is_new"), pick("is_special")]);
-  return { fresh, specials };
 }
 
-/** Real catalog search: every typed word must match a name, article or slug. */
+/** Catalog search over the real OpenCart data (name, model, article). */
 export async function loadSearch(query: string, lang: Lang): Promise<Product[]> {
   const q = query.trim();
   if (q.length < 2) return [];
 
-  const supabase = publicClient();
-  const { byId } = await categoryMap();
-  const terms = q
-    .replace(/[%,()]/g, " ")
-    .split(/\s+/)
-    .filter((t) => t.length >= 2)
-    .slice(0, 5);
-  if (!terms.length) return [];
-
-  let request = supabase.from("products").select(PRODUCT_COLUMNS).eq("is_active", true);
-  for (const term of terms) {
-    const pattern = `%${term}%`;
-    request = request.or(
-      [
-        `name_ru.ilike.${pattern}`,
-        `name_uk.ilike.${pattern}`,
-        `sku.ilike.${pattern}`,
-        `slug.ilike.${pattern}`,
-        `seo_url.ilike.${pattern}`,
-        `external_id.ilike.${pattern}`,
-      ].join(","),
-    );
-  }
-
-  const { data, error } = await request.order("sort_order", { ascending: true }).limit(120);
-  if (error) throw new Error(error.message);
-
+  const rows = await catalogBridge.search(lang, q);
+  const data = await snapshot(lang);
   const needle = q.toLowerCase();
-  // Exact article matches and name hits rank above incidental matches.
-  const score = (row: Row) => {
-    const sku = String(row["sku"] ?? "").toLowerCase();
-    const name = `${row["name_ru"] ?? ""} ${row["name_uk"] ?? ""}`.toLowerCase();
-    if (sku && sku === needle) return 0;
-    if (sku.includes(needle)) return 1;
-    if (name.startsWith(needle)) return 2;
-    if (name.includes(needle)) return 3;
-    return 4;
-  };
 
-  return (data ?? [])
-    .filter((row) => byId.has((row as Row)["category_id"] as string))
-    .sort((a, b) => score(a as Row) - score(b as Row))
-    .map((row) => toProduct(row as Row, lang, byId.get((row as Row)["category_id"] as string)!));
+  return (rows ?? [])
+    .map((row) => data.bySlug.get(productSlug(row)) ?? toProduct(row, lang, ""))
+    .sort((a, b) => score(a, needle) - score(b, needle));
 }
 
+function score(p: Product, needle: string): number {
+  const sku = (p.sku ?? "").toLowerCase();
+  const name = p.name.toLowerCase();
+  if (sku && sku === needle) return 0;
+  if (sku.includes(needle)) return 1;
+  if (name.startsWith(needle)) return 2;
+  if (name.includes(needle)) return 3;
+  return 4;
+}
 
 /** Single product page: the item itself plus siblings from the same category. */
 export async function loadProduct(
   slug: string,
   lang: Lang,
 ): Promise<{ product: Product; categorySlug: string; related: Product[] } | null> {
-  const supabase = publicClient();
-  const { byId } = await categoryMap();
+  const data = await snapshot(lang);
+  const known = data.bySlug.get(slug);
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_COLUMNS)
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return null;
+  // Full record (attributes, gallery, description) comes from the bridge.
+  const idMatch = /^p(\d+)$/.exec(slug);
+  const row = await catalogBridge.product(lang, {
+    productId: known ? Number(known.id) : idMatch ? Number(idMatch[1]) : undefined,
+    slug: known || idMatch ? undefined : slug,
+  });
+  if (!row && !known) return null;
 
-  const row = data as Row;
-  const categoryId = String(row["category_id"] ?? "");
-  const categorySlug = byId.get(categoryId) ?? "";
-  const product = toProduct(row, lang, categorySlug);
+  const categorySlug = known?.category ?? "";
+  const product = row ? toProduct(row, lang, categorySlug) : known!;
+  const related = (data.byCategory.get(categorySlug) ?? [])
+    .filter((p) => p.slug !== product.slug)
+    .slice(0, 8);
 
-  const { data: siblings } = await supabase
-    .from("products")
-    .select(PRODUCT_COLUMNS)
-    .eq("category_id", categoryId)
-    .eq("is_active", true)
-    .neq("slug", slug)
-    .order("sort_order", { ascending: true })
-    .limit(8);
-
-  const related = (siblings ?? []).map((r) => toProduct(r as Row, lang, categorySlug));
   return { product, categorySlug, related };
 }
 
 /** Slugs of every active product — used to build the sitemap. */
 export async function loadProductSlugs(): Promise<string[]> {
-  const supabase = publicClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select("slug, updated_at")
-    .eq("is_active", true)
-    .order("slug", { ascending: true })
-    .limit(5000);
-  if (error) return [];
-  return (data ?? [])
-    .map((row) => String((row as Row)["slug"] ?? ""))
-    .filter((slug) => slug.length > 0);
+  try {
+    const data = await snapshot("ru");
+    return data.products.map((p) => p.slug).sort();
+  } catch {
+    return [];
+  }
 }
