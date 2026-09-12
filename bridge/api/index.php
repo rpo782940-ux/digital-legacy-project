@@ -82,12 +82,27 @@ if (!hash_equals($expected, (string) $signature)) {
 }
 
 $payload = json_decode($rawBody, true);
-if (!is_array($payload) || !isset($payload['op']) || !is_string($payload['op'])) {
+if (!is_array($payload)) {
     fail(400, 'bad_request');
 }
 
-$op = $payload['op'];
-$params = (isset($payload['params']) && is_array($payload['params'])) ? $payload['params'] : array();
+// Both request shapes are accepted: {op, params} and {action, payload}.
+$op = '';
+if (isset($payload['op']) && is_string($payload['op'])) {
+    $op = $payload['op'];
+} elseif (isset($payload['action']) && is_string($payload['action'])) {
+    $op = $payload['action'];
+}
+if ($op === '') {
+    fail(400, 'bad_request');
+}
+
+$params = array();
+if (isset($payload['params']) && is_array($payload['params'])) {
+    $params = $payload['params'];
+} elseif (isset($payload['payload']) && is_array($payload['payload'])) {
+    $params = $payload['payload'];
+}
 
 // ---------------------------------------------------------------- connections
 
