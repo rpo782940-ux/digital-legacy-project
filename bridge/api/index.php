@@ -131,6 +131,21 @@ function connect($config, $which)
         fail(502, 'db_connect_failed');
     }
     $connections[$which] = $pdo;
+
+    // The old shop may use unprefixed tables (product) or the classic oc_
+    // prefix. Detect it once so a wrong config value cannot break the catalog.
+    if ($which === 'catalog') {
+        global $p;
+        if (!tableExists($pdo, $p . 'product')) {
+            foreach (array('', 'oc_') as $alt) {
+                if (tableExists($pdo, $alt . 'product')) {
+                    $p = $alt;
+                    break;
+                }
+            }
+        }
+    }
+
     return $pdo;
 }
 

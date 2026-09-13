@@ -206,16 +206,42 @@ async function snapshot(lang: Lang): Promise<Snapshot> {
 
 // ----------------------------------------------------------------- public API
 
+/**
+ * The bridge is the only data source; when the hosting side is misconfigured
+ * the pages must still render (empty, never with invented products).
+ */
+const EMPTY: Snapshot = {
+  products: [],
+  bySlug: new Map(),
+  byCategory: new Map(),
+  categories: CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.has(c.slug)).map((c) => ({
+    slug: c.slug,
+    name: c.slug,
+    count: 0,
+    cover: "/brand/logo.png",
+  })),
+  loadedAt: 0,
+};
+
+async function safeSnapshot(lang: Lang): Promise<Snapshot> {
+  try {
+    return await snapshot(lang);
+  } catch (error) {
+    console.error("[catalog] bridge unavailable:", (error as Error).message);
+    return EMPTY;
+  }
+}
+
 /** Category cards: product counts and a cover image per category. */
 export async function loadNav(): Promise<{ categories: CategorySummary[]; total: number }> {
-  const data = await snapshot("ru");
+  const data = await safeSnapshot("ru");
   return { categories: data.categories, total: data.products.length };
 }
 
 /** All active products of one category, specials and new arrivals first. */
 export async function loadCategory(slug: string, lang: Lang): Promise<Product[]> {
   if (HIDDEN_CATEGORIES.has(slug)) return [];
-  const data = await snapshot(lang);
+  const data = await safeSnapshot(lang);
   return data.byCategory.get(slug) ?? [];
 }
 
@@ -223,7 +249,7 @@ export async function loadCategory(slug: string, lang: Lang): Promise<Product[]>
 export async function loadHighlights(
   lang: Lang,
 ): Promise<{ fresh: Product[]; specials: Product[] }> {
-  const data = await snapshot(lang);
+  const data = await safeSnapshot(lang);
   const visible = data.products.filter((p) => p.category);
   return {
     fresh: visible.filter((p) => p.isNew).slice(0, 8),
@@ -236,8 +262,11 @@ export async function loadSearch(query: string, lang: Lang): Promise<Product[]> 
   const q = query.trim();
   if (q.length < 2) return [];
 
-  const rows = await catalogBridge.search(lang, q);
-  const data = await snapshot(lang);
+  const rows = await catalogBridge.search(lang, q).catch((error: Error) => {
+    console.error("[catalog] search failed:", error.message);
+    return [] as Awaited<ReturnType<typeof catalogBridge.search>>;
+  });
+  const data = await safeSnapshot(lang);
   const needle = q.toLowerCase();
 
   return (rows ?? [])
@@ -260,15 +289,20 @@ export async function loadProduct(
   slug: string,
   lang: Lang,
 ): Promise<{ product: Product; categorySlug: string; related: Product[] } | null> {
-  const data = await snapshot(lang);
+  const data = await safeSnapshot(lang);
   const known = data.bySlug.get(slug);
 
   // Full record (attributes, gallery, description) comes from the bridge.
   const idMatch = /^p(\d+)$/.exec(slug);
-  const row = await catalogBridge.product(lang, {
-    productId: known ? Number(known.id) : idMatch ? Number(idMatch[1]) : undefined,
-    slug: known || idMatch ? undefined : slug,
-  });
+  const row = await catalogBridge
+    .product(lang, {
+      productId: known ? Number(known.id) : idMatch ? Number(idMatch[1]) : undefined,
+      slug: known || idMatch ? undefined : slug,
+    })
+    .catch((error: Error) => {
+      console.error("[catalog] product failed:", error.message);
+      return null;
+    });
   if (!row && !known) return null;
 
   const categorySlug = known?.category ?? "";
@@ -283,7 +317,7 @@ export async function loadProduct(
 /** Slugs of every active product — used to build the sitemap. */
 export async function loadProductSlugs(): Promise<string[]> {
   try {
-    const data = await snapshot("ru");
+    const data = await safeSnapshot("ru");
     return data.products.map((p) => p.slug).sort();
   } catch {
     return [];
