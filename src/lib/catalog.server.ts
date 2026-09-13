@@ -241,7 +241,7 @@ export async function loadNav(): Promise<{ categories: CategorySummary[]; total:
 /** All active products of one category, specials and new arrivals first. */
 export async function loadCategory(slug: string, lang: Lang): Promise<Product[]> {
   if (HIDDEN_CATEGORIES.has(slug)) return [];
-  const data = await snapshot(lang);
+  const data = await safeSnapshot(lang);
   return data.byCategory.get(slug) ?? [];
 }
 
@@ -249,7 +249,7 @@ export async function loadCategory(slug: string, lang: Lang): Promise<Product[]>
 export async function loadHighlights(
   lang: Lang,
 ): Promise<{ fresh: Product[]; specials: Product[] }> {
-  const data = await snapshot(lang);
+  const data = await safeSnapshot(lang);
   const visible = data.products.filter((p) => p.category);
   return {
     fresh: visible.filter((p) => p.isNew).slice(0, 8),
@@ -263,7 +263,7 @@ export async function loadSearch(query: string, lang: Lang): Promise<Product[]> 
   if (q.length < 2) return [];
 
   const rows = await catalogBridge.search(lang, q);
-  const data = await snapshot(lang);
+  const data = await safeSnapshot(lang);
   const needle = q.toLowerCase();
 
   return (rows ?? [])
@@ -286,7 +286,7 @@ export async function loadProduct(
   slug: string,
   lang: Lang,
 ): Promise<{ product: Product; categorySlug: string; related: Product[] } | null> {
-  const data = await snapshot(lang);
+  const data = await safeSnapshot(lang);
   const known = data.bySlug.get(slug);
 
   // Full record (attributes, gallery, description) comes from the bridge.
@@ -309,7 +309,7 @@ export async function loadProduct(
 /** Slugs of every active product — used to build the sitemap. */
 export async function loadProductSlugs(): Promise<string[]> {
   try {
-    const data = await snapshot("ru");
+    const data = await safeSnapshot("ru");
     return data.products.map((p) => p.slug).sort();
   } catch {
     return [];
