@@ -294,10 +294,15 @@ export async function loadProduct(
 
   // Full record (attributes, gallery, description) comes from the bridge.
   const idMatch = /^p(\d+)$/.exec(slug);
-  const row = await catalogBridge.product(lang, {
-    productId: known ? Number(known.id) : idMatch ? Number(idMatch[1]) : undefined,
-    slug: known || idMatch ? undefined : slug,
-  });
+  const row = await catalogBridge
+    .product(lang, {
+      productId: known ? Number(known.id) : idMatch ? Number(idMatch[1]) : undefined,
+      slug: known || idMatch ? undefined : slug,
+    })
+    .catch((error: Error) => {
+      console.error("[catalog] product failed:", error.message);
+      return null;
+    });
   if (!row && !known) return null;
 
   const categorySlug = known?.category ?? "";
