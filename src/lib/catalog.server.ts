@@ -262,7 +262,10 @@ export async function loadSearch(query: string, lang: Lang): Promise<Product[]> 
   const q = query.trim();
   if (q.length < 2) return [];
 
-  const rows = await catalogBridge.search(lang, q);
+  const rows = await catalogBridge.search(lang, q).catch((error: Error) => {
+    console.error("[catalog] search failed:", error.message);
+    return [] as Awaited<ReturnType<typeof catalogBridge.search>>;
+  });
   const data = await safeSnapshot(lang);
   const needle = q.toLowerCase();
 
