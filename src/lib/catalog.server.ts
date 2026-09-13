@@ -206,9 +206,35 @@ async function snapshot(lang: Lang): Promise<Snapshot> {
 
 // ----------------------------------------------------------------- public API
 
+/**
+ * The bridge is the only data source; when the hosting side is misconfigured
+ * the pages must still render (empty, never with invented products).
+ */
+const EMPTY: Snapshot = {
+  products: [],
+  bySlug: new Map(),
+  byCategory: new Map(),
+  categories: CATEGORIES.filter((c) => !HIDDEN_CATEGORIES.has(c.slug)).map((c) => ({
+    slug: c.slug,
+    name: c.slug,
+    count: 0,
+    cover: "/brand/logo.png",
+  })),
+  loadedAt: 0,
+};
+
+async function safeSnapshot(lang: Lang): Promise<Snapshot> {
+  try {
+    return await snapshot(lang);
+  } catch (error) {
+    console.error("[catalog] bridge unavailable:", (error as Error).message);
+    return EMPTY;
+  }
+}
+
 /** Category cards: product counts and a cover image per category. */
 export async function loadNav(): Promise<{ categories: CategorySummary[]; total: number }> {
-  const data = await snapshot("ru");
+  const data = await safeSnapshot("ru");
   return { categories: data.categories, total: data.products.length };
 }
 
