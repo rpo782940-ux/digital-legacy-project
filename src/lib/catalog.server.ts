@@ -148,17 +148,24 @@ function categoryIndex(rows: CatalogCategoryRow[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const row of rows) {
     if (String(row.status) === "0") continue;
+    const id = String(row.category_id);
+    const mapped = SOURCE_CATEGORIES[id];
+    if (mapped) {
+      if (!HIDDEN_CATEGORIES.has(mapped)) map.set(id, mapped);
+      continue;
+    }
     const candidates = [row.slug ?? "", row.meta_title ?? "", row.name ?? ""];
     for (const candidate of candidates) {
       const slug = SITE_SLUGS.get(normalize(String(candidate)));
       if (slug && !HIDDEN_CATEGORIES.has(slug)) {
-        map.set(String(row.category_id), slug);
+        map.set(id, slug);
         break;
       }
     }
   }
   return map;
 }
+
 
 async function fetchAllProducts(lang: Lang): Promise<CatalogProductRow[]> {
   const all: CatalogProductRow[] = [];
