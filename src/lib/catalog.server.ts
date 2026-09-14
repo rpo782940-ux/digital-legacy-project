@@ -19,6 +19,35 @@ import { productAlt, productDescription, scrubText } from "@/lib/product-content
 /** Categories retired from the site but still present in the source data. */
 const HIDDEN_CATEGORIES = new Set(["forms_schelevogo_pola"]);
 
+/**
+ * OpenCart category_id -> site category slug.
+ *
+ * The old shop's SEO keywords do not match the slugs this site has always used,
+ * so the pairing is explicit. category_id is language independent.
+ */
+const SOURCE_CATEGORIES: Record<string, string> = {
+  "6064867": "forms_zaborov_iz_ABS",
+  "21198222": "forms_stekloplastic",
+  "21198190": "forms_stolbov",
+  "21198244": "forms_stolbov_stekloplastik",
+  "82102047": "forms_kryshek",
+  "6067752": "forms_pamyatnikov",
+  "82146617": "forms_nadgrobiy",
+  "6087271": "forms_plit_pod_pamyatniki",
+  "6088067": "forms_ogradok_ABC",
+  "82535236": "forms_3d_paneley",
+  "6088877": "forms_fasadnoy_plitki",
+  "6071980": "forms_trotyar_plitka",
+  "21198316": "forms_peril_i_balyasin",
+  "82535231": "forms_stolov_i_skameek",
+  "21198327": "forms_decora",
+  "82535235": "forms_schelevogo_pola",
+  "82535232": "dobavki_dlya_betona",
+  "82535234": "vakuumnaya_formovka",
+  "82535233": "vibrostoly",
+  "82088412": "forms_nabornyh_stolbov",
+};
+
 const PAGE_SIZE = 1000;
 const TTL_MS = 5 * 60_000;
 
@@ -32,6 +61,7 @@ function normalize(value: string): string {
     .replace(/\.(php|html?)$/, "")
     .replace(/[^a-z0-9а-яіїєґ]+/gi, "");
 }
+
 
 // ------------------------------------------------------------------ live cache
 
